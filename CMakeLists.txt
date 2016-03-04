@@ -1749,7 +1749,6 @@ include(CMakePackageConfigHelpers)
 set(PROJECT_VERSION     "${SDL_VERSION}")
 set(generated_dir       "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(config_install_dir  "lib${LIB_SUFFIX}/cmake/${PROJECT_NAME}")
-set(include_install_dir "include/SDL2")
 
 set(version_config      "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
 set(project_config      "${generated_dir}/${PROJECT_NAME}Config.cmake")
