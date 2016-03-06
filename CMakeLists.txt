@@ -178,7 +178,7 @@ if("$ENV{CFLAGS}" STREQUAL "")
     endif()
   endif()
 else()
-  set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} $ENV{CFLAGS}")
   list(APPEND EXTRA_CFLAGS "$ENV{CFLAGS}")
 endif()
 if(NOT ("$ENV{CFLAGS}" STREQUAL "")) # Hackish, but does the trick on Win32
