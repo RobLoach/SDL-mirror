@@ -1671,6 +1671,18 @@ if(SDL_STATIC)
   target_link_libraries(SDL2-static ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
   target_include_directories(SDL2-static PUBLIC $<INSTALL_INTERFACE:include>)
 
+if(WIN32 AND MSVC AND (MSVC_VERSION GREATER 1900 OR MSVC_VERSION EQUAL 1900))
+    # vs2015 needs some extra libs
+    # Fix is from: https://forums.libsdl.org/viewtopic.php?p=49026
+
+    set(EXTRA_LIBS
+        debug msvcrtd optimized msvcrt
+        debug vcruntimed optimized vcruntimed
+        debug ucrtd optimized ucrtd
+        ${EXTRA_LIBS}
+    )
+endif()
+
 add_library(SDL2 ${SOURCE_FILES})
 set_target_properties(SDL2 PROPERTIES OUTPUT_NAME "SDL2")
 
