@@ -185,26 +185,6 @@ if(NOT ("$ENV{CFLAGS}" STREQUAL "")) # Hackish, but does the trick on Win32
   list(APPEND EXTRA_LDFLAGS "$ENV{LDFLAGS}")
 endif()
 
-if(MSVC)
-  option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
-  if(FORCE_STATIC_VCRT)
-    foreach(flag_var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-      if(${flag_var} MATCHES "/MD")
-        string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-      endif()
-    endforeach()
-  endif()
-
-  # Make sure /RTC1 is disabled, otherwise it will use functions from the CRT
-  foreach(flag_var
-      CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-      CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-    string(REGEX REPLACE "/RTC(su|[1su])" "" ${flag_var} "${${flag_var}}")
-  endforeach(flag_var)
-endif()
-
 # Those are used for pkg-config and friends, so that the SDL2.pc, sdl2-config,
 # etc. are created correctly.
 set(SDL_LIBS "-lSDL2")
@@ -1690,19 +1670,6 @@ if(SDL_STATIC)
   set(_INSTALL_LIBS "SDL2-static" ${_INSTALL_LIBS})
   target_link_libraries(SDL2-static ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
   target_include_directories(SDL2-static PUBLIC $<INSTALL_INTERFACE:include>)
-
-if(WIN32)
-    # Some stupid crap going on with sdl2 on windows, need to explicitly link in
-    # a bunch of c std lib files.
-    # Fix is from: https://forums.libsdl.org/viewtopic.php?p=49026
-
-    set(EXTRA_LIBS
-        debug msvcrtd optimized msvcrt
-        debug vcruntimed optimized vcruntimed
-        debug ucrtd optimized ucrtd
-        ${EXTRA_LIBS}
-    )
-endif()
 
 add_library(SDL2 ${SOURCE_FILES})
 set_target_properties(SDL2 PROPERTIES OUTPUT_NAME "SDL2")
