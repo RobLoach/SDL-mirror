@@ -1686,8 +1686,8 @@ if(WIN32 AND MSVC AND (MSVC_VERSION GREATER 1900 OR MSVC_VERSION EQUAL 1900))
 
     set(EXTRA_LIBS
         debug msvcrtd optimized msvcrt
-        debug vcruntimed optimized vcruntimed
-        debug ucrtd optimized ucrtd
+        debug vcruntimed optimized vcruntime
+        debug ucrtd optimized ucrt
         ${EXTRA_LIBS}
     )
 endif()
