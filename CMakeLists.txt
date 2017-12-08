@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 3.2)
 
 include("cmake/HunterGate.cmake")
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.19.185.tar.gz"
-    SHA1 "ad5e8de9e7135eceeb0fd3f78fafe5e0997b4303"
+    URL "https://github.com/ruslo/hunter/archive/v0.19.186.tar.gz"
+    SHA1 "4270abd8e8f7769382dc99363976e5cf3836684c"
 )
 
 project(SDL2)
