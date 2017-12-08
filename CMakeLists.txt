@@ -2,18 +2,15 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the SDL source code and call cmake from there")
 endif()
 
-cmake_minimum_required(VERSION 2.8.11)
-project(SDL2 C)
+cmake_minimum_required(VERSION 3.2)
 
-# !!! FIXME: this should probably do "MACOSX_RPATH ON" as a target property
-# !!! FIXME:  for the SDL2 shared library (so you get an
-# !!! FIXME:  install_name ("soname") of "@rpath/libSDL-whatever.dylib"
-# !!! FIXME:  instead of "/usr/local/lib/libSDL-whatever.dylib"), but I'm
-# !!! FIXME:  punting for now and leaving the existing behavior. Until this
-# !!! FIXME:  properly resolved, this line silences a warning in CMake 3.0+.
-# !!! FIXME:  remove it and this comment entirely once the problem is
-# !!! FIXME:  properly resolved.
-#cmake_policy(SET CMP0042 OLD)
+include("cmake/HunterGate.cmake")
+HunterGate(
+    URL "https://github.com/ruslo/hunter/archive/v0.19.185.tar.gz"
+    SHA1 "ad5e8de9e7135eceeb0fd3f78fafe5e0997b4303"
+)
+
+project(SDL2)
 
 include(CheckFunctionExists)
 include(CheckLibraryExists)
@@ -29,6 +26,7 @@ include(CMakeDependentOption)
 include(FindPkgConfig)
 include(GNUInstallDirs)
 set(CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
+
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
 
@@ -1416,32 +1414,44 @@ elseif(APPLE)
 
   # Actually load the frameworks at the end so we don't duplicate include.
   if(SDL_FRAMEWORK_COREVIDEO)
-    find_library(COREVIDEO CoreVideo)
-    list(APPEND EXTRA_LIBS ${COREVIDEO})
+    find_package(corevideo REQUIRED)
+    list(APPEND EXTRA_LIBS corevideo::corevideo)
   endif()
   if(SDL_FRAMEWORK_COCOA)
-    find_library(COCOA_LIBRARY Cocoa)
-    list(APPEND EXTRA_LIBS ${COCOA_LIBRARY})
+    find_package(foundation REQUIRED)
+    list(APPEND EXTRA_LIBS foundation::foundation)
+
+    find_package(appkit REQUIRED)
+    list(APPEND EXTRA_LIBS appkit::appkit)
+
+    find_package(coredata REQUIRED)
+    list(APPEND EXTRA_LIBS coredata::coredata)
   endif()
   if(SDL_FRAMEWORK_IOKIT)
-    find_library(IOKIT IOKit)
-    list(APPEND EXTRA_LIBS ${IOKIT})
+    find_package(iokit REQUIRED)
+    list(APPEND EXTRA_LIBS iokit::iokit)
   endif()
   if(SDL_FRAMEWORK_FF)
-    find_library(FORCEFEEDBACK ForceFeedback)
-    list(APPEND EXTRA_LIBS ${FORCEFEEDBACK})
+    find_package(forcefeedback REQUIRED)
+    list(APPEND EXTRA_LIBS forcefeedback::forcefeedback)
   endif()
   if(SDL_FRAMEWORK_CARBON)
-    find_library(CARBON_LIBRARY Carbon)
-    list(APPEND EXTRA_LIBS ${CARBON_LIBRARY})
+    find_package(carbon REQUIRED)
+    list(APPEND EXTRA_LIBS carbon::carbon)
   endif()
   if(SDL_FRAMEWORK_COREAUDIO)
-    find_library(COREAUDIO CoreAudio)
-    list(APPEND EXTRA_LIBS ${COREAUDIO})
+    find_package(coreaudio REQUIRED)
+    list(APPEND EXTRA_LIBS coreaudio::coreaudio)
   endif()
+
   if(SDL_FRAMEWORK_AUDIOTOOLBOX)
     find_library(AUDIOTOOLBOX AudioToolbox)
     list(APPEND EXTRA_LIBS ${AUDIOTOOLBOX})
+  endif()
+
+  if(SDL_FRAMEWORK_AUDIOUNIT)
+    find_package(audiounit REQUIRED)
+    list(APPEND EXTRA_LIBS audiounit::audiounit)
   endif()
 
   # iOS hack needed - http://code.google.com/p/ios-cmake/ ?
