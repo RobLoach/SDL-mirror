@@ -1570,7 +1570,7 @@ check_c_source_compiles("
     #endif
     " IS_ANDROID)
 
-if (NOT (IS_ANDROID OR WIN32 OR APPLE))
+if (NOT (IS_ANDROID OR APPLE))
     add_definitions(-DUSING_GENERATED_CONFIG_H)
     configure_file("${SDL2_SOURCE_DIR}/include/SDL_config.h.cmake"
       "${SDL2_BINARY_DIR}/include/SDL_config.h")
@@ -1642,68 +1642,7 @@ add_library(SDL2main STATIC ${SDLMAIN_SOURCES})
 target_include_directories(SDL2main PUBLIC $<INSTALL_INTERFACE:include>)
 set(_INSTALL_LIBS "SDL2main")
 
-if(SDL_SHARED)
-  add_library(SDL2 SHARED ${SOURCE_FILES} ${VERSION_SOURCES})
-  if(APPLE)
-    set_target_properties(SDL2 PROPERTIES MACOSX_RPATH 1)
-  elseif(UNIX AND NOT ANDROID)
-    set_target_properties(SDL2 PROPERTIES
-      VERSION ${LT_VERSION}
-      SOVERSION ${LT_REVISION}
-      OUTPUT_NAME "SDL2-${LT_RELEASE}")
-  else()
-    set_target_properties(SDL2 PROPERTIES
-      VERSION ${SDL_VERSION}
-      SOVERSION ${LT_REVISION}
-      OUTPUT_NAME "SDL2")
-  endif()
-  if(MSVC AND NOT LIBC)
-    # Don't try to link with the default set of libraries.
-    set_target_properties(SDL2 PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2 PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2 PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
-  endif()
-  set(_INSTALL_LIBS "SDL2" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2 PUBLIC $<INSTALL_INTERFACE:include>)
-endif()
-
-if(SDL_STATIC)
-  set (BUILD_SHARED_LIBS FALSE)
-  add_library(SDL2-static STATIC ${SOURCE_FILES})
-  if (NOT SDL_SHARED OR NOT WIN32)
-    set_target_properties(SDL2-static PROPERTIES OUTPUT_NAME "SDL2")
-    # Note: Apparently, OUTPUT_NAME must really be unique; even when
-    # CMAKE_IMPORT_LIBRARY_SUFFIX or the like are given. Otherwise
-    # the static build may race with the import lib and one will get
-    # clobbered, when the suffix is realized via subsequent rename.
-  endif()
-  set_target_properties(SDL2-static PROPERTIES POSITION_INDEPENDENT_CODE ${SDL_STATIC_PIC})
-  if(MSVC AND NOT LIBC)
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
-  endif()
-  # TODO: Win32 platforms keep the same suffix .lib for import and static
-  # libraries - do we need to consider this?
-  set(_INSTALL_LIBS "SDL2-static" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2-static ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2-static PUBLIC $<INSTALL_INTERFACE:include>)
-
-if(WIN32 AND MSVC AND (MSVC_VERSION GREATER 1900 OR MSVC_VERSION EQUAL 1900))
-    # vs2015 needs some extra libs
-    # Fix is from: https://forums.libsdl.org/viewtopic.php?p=49026
-
-    set(EXTRA_LIBS
-        debug msvcrtd optimized msvcrt
-        debug vcruntimed optimized vcruntime
-        debug ucrtd optimized ucrt
-        ${EXTRA_LIBS}
-    )
-endif()
-
 add_library(SDL2 ${SOURCE_FILES})
-set_target_properties(SDL2 PROPERTIES OUTPUT_NAME "SDL2")
 
 set(_INSTALL_LIBS "SDL2" ${_INSTALL_LIBS})
 target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
@@ -1770,11 +1709,6 @@ write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
   COMPATIBILITY AnyNewerVersion
 )
 
-install(EXPORT SDL2Targets
-  FILE SDL2Targets.cmake
-  NAMESPACE SDL2::
-  DESTINATION ${PKG_PREFIX}
-)
 install(
   FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/SDL2Config.cmake
@@ -1791,30 +1725,6 @@ foreach(_FNAME ${BIN_INCLUDE_FILES})
 endforeach()
 list(APPEND INCLUDE_FILES ${BIN_INCLUDE_FILES})
 install(FILES ${INCLUDE_FILES} DESTINATION include/SDL2)
-
-if(NOT (WINDOWS OR CYGWIN))
-  if(SDL_SHARED)
-    if (APPLE)
-        set(SOEXT "dylib")
-    else()
-        set(SOEXT "so")
-    endif()
-    install(CODE "
-      execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-      \"libSDL2-2.0.${SOEXT}\" \"libSDL2.${SOEXT}\")")
-    install(FILES ${SDL2_BINARY_DIR}/libSDL2.${SOEXT} DESTINATION "lib${LIB_SUFFIX}")
-  endif()
-  if(FREEBSD)
-    # FreeBSD uses ${PREFIX}/libdata/pkgconfig
-    install(FILES ${SDL2_BINARY_DIR}/sdl2.pc DESTINATION "libdata/pkgconfig")
-  else()
-    install(FILES ${SDL2_BINARY_DIR}/sdl2.pc
-      DESTINATION "lib${LIB_SUFFIX}/pkgconfig")
-  endif()
-  install(PROGRAMS ${SDL2_BINARY_DIR}/sdl2-config DESTINATION bin)
-  # TODO: what about the .spec file? Is it only needed for RPM creation?
-  install(FILES "${SDL2_SOURCE_DIR}/sdl2.m4" DESTINATION "${CMAKE_INSTALL_FULL_DATAROOTDIR}/aclocal")
-endif()
 
 #----------------------------------------------------------
 
