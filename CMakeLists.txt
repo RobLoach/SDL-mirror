@@ -25,7 +25,7 @@ include(CheckStructHasMember)
 include(CMakeDependentOption)
 include(FindPkgConfig)
 include(GNUInstallDirs)
-set(CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
 
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
