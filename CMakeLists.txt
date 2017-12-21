@@ -2,18 +2,15 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the SDL source code and call cmake from there")
 endif()
 
-cmake_minimum_required(VERSION 2.8.11)
-project(SDL2 C)
+cmake_minimum_required(VERSION 3.2)
 
-# !!! FIXME: this should probably do "MACOSX_RPATH ON" as a target property
-# !!! FIXME:  for the SDL2 shared library (so you get an
-# !!! FIXME:  install_name ("soname") of "@rpath/libSDL-whatever.dylib"
-# !!! FIXME:  instead of "/usr/local/lib/libSDL-whatever.dylib"), but I'm
-# !!! FIXME:  punting for now and leaving the existing behavior. Until this
-# !!! FIXME:  properly resolved, this line silences a warning in CMake 3.0+.
-# !!! FIXME:  remove it and this comment entirely once the problem is
-# !!! FIXME:  properly resolved.
-#cmake_policy(SET CMP0042 OLD)
+include("cmake/HunterGate.cmake")
+HunterGate(
+    URL "https://github.com/ruslo/hunter/archive/v0.19.186.tar.gz"
+    SHA1 "4270abd8e8f7769382dc99363976e5cf3836684c"
+)
+
+project(SDL2)
 
 include(CheckFunctionExists)
 include(CheckLibraryExists)
@@ -29,6 +26,7 @@ include(CMakeDependentOption)
 include(FindPkgConfig)
 include(GNUInstallDirs)
 set(CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
+
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
 
@@ -178,31 +176,11 @@ if("$ENV{CFLAGS}" STREQUAL "")
     endif()
   endif()
 else()
-  set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} $ENV{CFLAGS}")
   list(APPEND EXTRA_CFLAGS "$ENV{CFLAGS}")
 endif()
 if(NOT ("$ENV{CFLAGS}" STREQUAL "")) # Hackish, but does the trick on Win32
   list(APPEND EXTRA_LDFLAGS "$ENV{LDFLAGS}")
-endif()
-
-if(MSVC)
-  option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
-  if(FORCE_STATIC_VCRT)
-    foreach(flag_var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-      if(${flag_var} MATCHES "/MD")
-        string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-      endif()
-    endforeach()
-  endif()
-
-  # Make sure /RTC1 is disabled, otherwise it will use functions from the CRT
-  foreach(flag_var
-      CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-      CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-    string(REGEX REPLACE "/RTC(su|[1su])" "" ${flag_var} "${${flag_var}}")
-  endforeach(flag_var)
 endif()
 
 # Those are used for pkg-config and friends, so that the SDL2.pc, sdl2-config,
@@ -230,7 +208,6 @@ if(CYGWIN)
   set(SDL_CFLAGS "${SDL_CFLAGS} -I/usr/include/mingw")
 endif()
 
-add_definitions(-DUSING_GENERATED_CONFIG_H)
 # General includes
 include_directories(${SDL2_BINARY_DIR}/include ${SDL2_SOURCE_DIR}/include)
 if(USE_GCC OR USE_CLANG)
@@ -253,10 +230,6 @@ if(EMSCRIPTEN)
   set(SDL_LOADSO_ENABLED_BY_DEFAULT OFF)
   set(SDL_CPUINFO_ENABLED_BY_DEFAULT OFF)
   set(SDL_DLOPEN_ENABLED_BY_DEFAULT OFF)
-endif()
-
-if (NOT DEFINED SDL_SHARED_ENABLED_BY_DEFAULT)
-    set(SDL_SHARED_ENABLED_BY_DEFAULT ON)
 endif()
 
 set(SDL_SUBSYSTEMS
@@ -1441,32 +1414,44 @@ elseif(APPLE)
 
   # Actually load the frameworks at the end so we don't duplicate include.
   if(SDL_FRAMEWORK_COREVIDEO)
-    find_library(COREVIDEO CoreVideo)
-    list(APPEND EXTRA_LIBS ${COREVIDEO})
+    find_package(corevideo REQUIRED)
+    list(APPEND EXTRA_LIBS corevideo::corevideo)
   endif()
   if(SDL_FRAMEWORK_COCOA)
-    find_library(COCOA_LIBRARY Cocoa)
-    list(APPEND EXTRA_LIBS ${COCOA_LIBRARY})
+    find_package(foundation REQUIRED)
+    list(APPEND EXTRA_LIBS foundation::foundation)
+
+    find_package(appkit REQUIRED)
+    list(APPEND EXTRA_LIBS appkit::appkit)
+
+    find_package(coredata REQUIRED)
+    list(APPEND EXTRA_LIBS coredata::coredata)
   endif()
   if(SDL_FRAMEWORK_IOKIT)
-    find_library(IOKIT IOKit)
-    list(APPEND EXTRA_LIBS ${IOKIT})
+    find_package(iokit REQUIRED)
+    list(APPEND EXTRA_LIBS iokit::iokit)
   endif()
   if(SDL_FRAMEWORK_FF)
-    find_library(FORCEFEEDBACK ForceFeedback)
-    list(APPEND EXTRA_LIBS ${FORCEFEEDBACK})
+    find_package(forcefeedback REQUIRED)
+    list(APPEND EXTRA_LIBS forcefeedback::forcefeedback)
   endif()
   if(SDL_FRAMEWORK_CARBON)
-    find_library(CARBON_LIBRARY Carbon)
-    list(APPEND EXTRA_LIBS ${CARBON_LIBRARY})
+    find_package(carbon REQUIRED)
+    list(APPEND EXTRA_LIBS carbon::carbon)
   endif()
   if(SDL_FRAMEWORK_COREAUDIO)
-    find_library(COREAUDIO CoreAudio)
-    list(APPEND EXTRA_LIBS ${COREAUDIO})
+    find_package(coreaudio REQUIRED)
+    list(APPEND EXTRA_LIBS coreaudio::coreaudio)
   endif()
+
   if(SDL_FRAMEWORK_AUDIOTOOLBOX)
     find_library(AUDIOTOOLBOX AudioToolbox)
     list(APPEND EXTRA_LIBS ${AUDIOTOOLBOX})
+  endif()
+
+  if(SDL_FRAMEWORK_AUDIOUNIT)
+    find_package(audiounit REQUIRED)
+    list(APPEND EXTRA_LIBS audiounit::audiounit)
   endif()
 
   # iOS hack needed - http://code.google.com/p/ios-cmake/ ?
@@ -1578,8 +1563,18 @@ endif()
 #   endif()
 # endif()
 
-configure_file("${SDL2_SOURCE_DIR}/include/SDL_config.h.cmake"
-  "${SDL2_BINARY_DIR}/include/SDL_config.h")
+
+check_c_source_compiles("
+    #ifndef __ANDROID_
+        #error asdf
+    #endif
+    " IS_ANDROID)
+
+if (NOT (IS_ANDROID OR APPLE))
+    add_definitions(-DUSING_GENERATED_CONFIG_H)
+    configure_file("${SDL2_SOURCE_DIR}/include/SDL_config.h.cmake"
+      "${SDL2_BINARY_DIR}/include/SDL_config.h")
+endif()
 
 # Prepare the flags and remove duplicates
 if(EXTRA_LDFLAGS)
@@ -1594,52 +1589,6 @@ endif()
 listtostr(EXTRA_CFLAGS _EXTRA_CFLAGS)
 set(EXTRA_CFLAGS ${_EXTRA_CFLAGS})
 
-# Compat helpers for the configuration files
-if(NOT WINDOWS OR CYGWIN)
-  # TODO: we need a Windows script, too
-  execute_process(COMMAND sh ${SDL2_SOURCE_DIR}/build-scripts/updaterev.sh)
-
-  set(prefix ${CMAKE_INSTALL_PREFIX})
-  set(exec_prefix "\${prefix}")
-  set(libdir "\${exec_prefix}/lib${LIB_SUFFIX}")
-  set(bindir "\${exec_prefix}/bin")
-  set(includedir "\${prefix}/include")
-  if(SDL_STATIC)
-    set(ENABLE_STATIC_TRUE "")
-    set(ENABLE_STATIC_FALSE "#")
-  else()
-    set(ENABLE_STATIC_TRUE "#")
-    set(ENABLE_STATIC_FALSE "")
-  endif()
-  if(SDL_SHARED)
-    set(ENABLE_SHARED_TRUE "")
-    set(ENABLE_SHARED_FALSE "#")
-  else()
-    set(ENABLE_SHARED_TRUE "#")
-    set(ENABLE_SHARED_FALSE "")
-  endif()
-
-  # Clean up the different lists
-  listtostr(EXTRA_LIBS _EXTRA_LIBS "-l")
-  set(SDL_STATIC_LIBS ${SDL_LIBS} ${EXTRA_LDFLAGS} ${_EXTRA_LIBS})
-  list(REMOVE_DUPLICATES SDL_STATIC_LIBS)
-  listtostr(SDL_STATIC_LIBS _SDL_STATIC_LIBS)
-  set(SDL_STATIC_LIBS ${_SDL_STATIC_LIBS})
-  listtostr(SDL_LIBS _SDL_LIBS)
-  set(SDL_LIBS ${_SDL_LIBS})
-
-  # MESSAGE(STATUS "SDL_LIBS: ${SDL_LIBS}")
-  # MESSAGE(STATUS "SDL_STATIC_LIBS: ${SDL_STATIC_LIBS}")
-
-  configure_file("${SDL2_SOURCE_DIR}/sdl2.pc.in"
-    "${SDL2_BINARY_DIR}/sdl2.pc" @ONLY)
-  configure_file("${SDL2_SOURCE_DIR}/sdl2-config.in"
-    "${SDL2_BINARY_DIR}/sdl2-config")
-  configure_file("${SDL2_SOURCE_DIR}/sdl2-config.in"
-    "${SDL2_BINARY_DIR}/sdl2-config" @ONLY)
-  configure_file("${SDL2_SOURCE_DIR}/SDL2.spec.in"
-    "${SDL2_BINARY_DIR}/SDL2.spec" @ONLY)
-endif()
 
 ##### Info output #####
 message(STATUS "")
@@ -1677,6 +1626,7 @@ if(SDL_STATIC)
     message(STATUS " Build Static Library with Position Independent Code: ${SDL_STATIC_PIC}")
 endif()
 message(STATUS "")
+
 if(UNIX)
   message(STATUS "If something was not detected, although the libraries")
   message(STATUS "were installed, then make sure you have set the")
@@ -1692,57 +1642,54 @@ add_library(SDL2main STATIC ${SDLMAIN_SOURCES})
 target_include_directories(SDL2main PUBLIC $<INSTALL_INTERFACE:include>)
 set(_INSTALL_LIBS "SDL2main")
 
-if(SDL_SHARED)
-  add_library(SDL2 SHARED ${SOURCE_FILES} ${VERSION_SOURCES})
-  if(APPLE)
-    set_target_properties(SDL2 PROPERTIES MACOSX_RPATH 1)
-  elseif(UNIX AND NOT ANDROID)
-    set_target_properties(SDL2 PROPERTIES
-      VERSION ${LT_VERSION}
-      SOVERSION ${LT_REVISION}
-      OUTPUT_NAME "SDL2-${LT_RELEASE}")
-  else()
-    set_target_properties(SDL2 PROPERTIES
-      VERSION ${SDL_VERSION}
-      SOVERSION ${LT_REVISION}
-      OUTPUT_NAME "SDL2")
-  endif()
-  if(MSVC AND NOT LIBC)
-    # Don't try to link with the default set of libraries.
-    set_target_properties(SDL2 PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2 PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2 PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
-  endif()
-  set(_INSTALL_LIBS "SDL2" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2 PUBLIC $<INSTALL_INTERFACE:include>)
-endif()
+add_library(SDL2 ${SOURCE_FILES})
 
-if(SDL_STATIC)
-  set (BUILD_SHARED_LIBS FALSE)
-  add_library(SDL2-static STATIC ${SOURCE_FILES})
-  if (NOT SDL_SHARED OR NOT WIN32)
-    set_target_properties(SDL2-static PROPERTIES OUTPUT_NAME "SDL2")
-    # Note: Apparently, OUTPUT_NAME must really be unique; even when
-    # CMAKE_IMPORT_LIBRARY_SUFFIX or the like are given. Otherwise
-    # the static build may race with the import lib and one will get
-    # clobbered, when the suffix is realized via subsequent rename.
-  endif()
-  set_target_properties(SDL2-static PROPERTIES POSITION_INDEPENDENT_CODE ${SDL_STATIC_PIC})
-  if(MSVC AND NOT LIBC)
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
-  endif()
-  # TODO: Win32 platforms keep the same suffix .lib for import and static
-  # libraries - do we need to consider this?
-  set(_INSTALL_LIBS "SDL2-static" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2-static ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2-static PUBLIC $<INSTALL_INTERFACE:include>)
-endif()
+set(_INSTALL_LIBS "SDL2" ${_INSTALL_LIBS})
+target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
+
+add_definitions(-DHAVE_LIBC)
+
+#----------------------------------------------------------
+#Generate CMake config file.
+
+include(CMakePackageConfigHelpers)
+
+set(PROJECT_VERSION     "${SDL_VERSION}")
+set(generated_dir       "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(config_install_dir  "lib/cmake/${PROJECT_NAME}")
+
+set(version_config      "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
+set(project_config      "${generated_dir}/${PROJECT_NAME}Config.cmake")
+set(targets_export_name "${PROJECT_NAME}Targets")
+set(namespace           "${PROJECT_NAME}::")
+
+write_basic_package_version_file(
+    "${version_config}" COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    "cmake/Config.cmake.in"
+    "${project_config}"
+    INSTALL_DESTINATION "${config_install_dir}"
+)
+
+install(
+    FILES       "${project_config}" "${version_config}"
+    DESTINATION "${config_install_dir}"
+)
+
+install(
+    EXPORT      "${targets_export_name}"
+    NAMESPACE   "${namespace}"
+    DESTINATION "${config_install_dir}"
+)
+
 
 ##### Installation targets #####
-install(TARGETS ${_INSTALL_LIBS} EXPORT SDL2Targets
+install(TARGETS ${_INSTALL_LIBS}
+  EXPORT "${targets_export_name}"
+  ###################################
+  INCLUDES DESTINATION "include" "include/SDL2"
   LIBRARY DESTINATION "lib${LIB_SUFFIX}"
   ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
   RUNTIME DESTINATION bin)
@@ -1762,11 +1709,6 @@ write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
   COMPATIBILITY AnyNewerVersion
 )
 
-install(EXPORT SDL2Targets
-  FILE SDL2Targets.cmake
-  NAMESPACE SDL2::
-  DESTINATION ${PKG_PREFIX}
-)
 install(
   FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/SDL2Config.cmake
@@ -1784,29 +1726,7 @@ endforeach()
 list(APPEND INCLUDE_FILES ${BIN_INCLUDE_FILES})
 install(FILES ${INCLUDE_FILES} DESTINATION include/SDL2)
 
-if(NOT (WINDOWS OR CYGWIN))
-  if(SDL_SHARED)
-    if (APPLE)
-        set(SOEXT "dylib")
-    else()
-        set(SOEXT "so")
-    endif()
-    install(CODE "
-      execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-      \"libSDL2-2.0.${SOEXT}\" \"libSDL2.${SOEXT}\")")
-    install(FILES ${SDL2_BINARY_DIR}/libSDL2.${SOEXT} DESTINATION "lib${LIB_SUFFIX}")
-  endif()
-  if(FREEBSD)
-    # FreeBSD uses ${PREFIX}/libdata/pkgconfig
-    install(FILES ${SDL2_BINARY_DIR}/sdl2.pc DESTINATION "libdata/pkgconfig")
-  else()
-    install(FILES ${SDL2_BINARY_DIR}/sdl2.pc
-      DESTINATION "lib${LIB_SUFFIX}/pkgconfig")
-  endif()
-  install(PROGRAMS ${SDL2_BINARY_DIR}/sdl2-config DESTINATION bin)
-  # TODO: what about the .spec file? Is it only needed for RPM creation?
-  install(FILES "${SDL2_SOURCE_DIR}/sdl2.m4" DESTINATION "${CMAKE_INSTALL_FULL_DATAROOTDIR}/aclocal")
-endif()
+#----------------------------------------------------------
 
 ##### Uninstall target #####
 
@@ -1819,3 +1739,4 @@ if(NOT TARGET uninstall)
   add_custom_target(uninstall
       COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 endif()
+
