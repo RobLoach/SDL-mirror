@@ -25,7 +25,7 @@ include(CheckStructHasMember)
 include(CMakeDependentOption)
 include(FindPkgConfig)
 include(GNUInstallDirs)
-set(CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
 
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
@@ -1564,13 +1564,7 @@ endif()
 # endif()
 
 
-check_c_source_compiles("
-    #ifndef __ANDROID_
-        #error asdf
-    #endif
-    " IS_ANDROID)
-
-if (NOT (IS_ANDROID OR APPLE))
+if (NOT (ANDROID OR APPLE))
     add_definitions(-DUSING_GENERATED_CONFIG_H)
     configure_file("${SDL2_SOURCE_DIR}/include/SDL_config.h.cmake"
       "${SDL2_BINARY_DIR}/include/SDL_config.h")
@@ -1695,13 +1689,7 @@ install(TARGETS ${_INSTALL_LIBS}
   RUNTIME DESTINATION bin)
 
 ##### Export files #####
-if (APPLE)
-  set(PKG_PREFIX "SDL2.framework/Resources")
-elseif (WINDOWS)
-  set(PKG_PREFIX "cmake")
-else ()
   set(PKG_PREFIX "lib/cmake/SDL2")
-endif ()
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
@@ -1711,7 +1699,6 @@ write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
 
 install(
   FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDL2Config.cmake
     ${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake
   DESTINATION ${PKG_PREFIX}
   COMPONENT Devel
