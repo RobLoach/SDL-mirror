@@ -1445,8 +1445,8 @@ elseif(APPLE)
   endif()
 
   if(SDL_FRAMEWORK_AUDIOTOOLBOX)
-    find_library(AUDIOTOOLBOX AudioToolbox)
-    list(APPEND EXTRA_LIBS ${AUDIOTOOLBOX})
+    find_package(audiotoolbox REQUIRED)
+    list(APPEND EXTRA_LIBS audiotoolbox::audiotoolbox)
   endif()
 
   if(SDL_FRAMEWORK_AUDIOUNIT)
