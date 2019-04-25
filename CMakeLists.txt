@@ -1384,6 +1384,10 @@ elseif(APPLE)
     endif()
   endif()
 
+  if(IOS)
+    set(SDL_FRAMEWORK_FF 0)
+  endif()
+
   if(SDL_POWER)
     set(SDL_POWER_MACOSX 1)
     if (IOS)
@@ -1637,6 +1641,32 @@ target_include_directories(SDL2main PUBLIC $<INSTALL_INTERFACE:include>)
 set(_INSTALL_LIBS "SDL2main")
 
 add_library(SDL2 ${SOURCE_FILES})
+
+if(IOS)
+  set_target_properties(
+     SDL2
+     PROPERTIES
+     XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+  )
+
+  find_package(opengles REQUIRED)
+  list(APPEND EXTRA_LIBS opengles::opengles)
+
+  find_package(gamecontroller REQUIRED)
+  list(APPEND EXTRA_LIBS gamecontroller::gamecontroller)
+
+  find_package(quartzcore REQUIRED)
+  list(APPEND EXTRA_LIBS quartzcore::quartzcore)
+
+  find_package(avfoundation REQUIRED)
+  list(APPEND EXTRA_LIBS avfoundation::avfoundation)
+
+  find_package(uikit REQUIRED)
+  list(APPEND EXTRA_LIBS uikit::uikit)
+
+  find_package(coremotion REQUIRED)
+  list(APPEND EXTRA_LIBS coremotion::coremotion)
+endif()
 
 set(_INSTALL_LIBS "SDL2" ${_INSTALL_LIBS})
 target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
