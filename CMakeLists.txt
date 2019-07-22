@@ -134,6 +134,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Haiku.*")
   set(HAIKU TRUE)
 endif()
 
+set(SDL_JOYSTICK_HIDAPI 0)
+
 # Don't mistake osx for unix
 if(UNIX AND NOT APPLE)
   set(UNIX_SYS ON)
